@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/arsyaputraa/go-synapsis-challenge/dto"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -13,12 +14,17 @@ type Product struct {
     Description string    `gorm:"type:text" json:"description"`
     Price       float64   `gorm:"type:decimal(10,2);not null" json:"price"`
     Stock       int       `gorm:"not null" json:"stock"`
-    CategoryID  uuid.UUID `gorm:"type:uuid;not null"` // Foreign key to Category
     CreatedAt   time.Time `gorm:"autoCreateTime"`
     UpdatedAt   time.Time `gorm:"autoUpdateTime"`
     CategoryRefer    uuid.UUID     `json:"category_id" gorm:"type:uuid;"`
-	Order         Order    `gorm:"foreignKey:CategoryRefer"`
+	Category         Category    `gorm:"foreignKey:CategoryRefer"`
 }
+
+
+func (p *Product) ToDto() dto.ResponseProduct {
+	return dto.ResponseProduct{ID: p.ID, Name: p.Name, Description: p.Description, Price: p.Price, Stock: p.Stock, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt, Category:p.Category.ToDto() }
+}
+
 
 // BeforeCreate hook will be triggered before inserting a new record to the database
 func (product *Product) BeforeCreate(tx *gorm.DB) (err error) {

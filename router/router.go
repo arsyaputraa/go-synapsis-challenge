@@ -9,6 +9,6 @@ import (
 	// user
 	userRoutes(app)
 	authRoutes(app)
-
+	productRoutes(app)
    }
 
