@@ -137,21 +137,20 @@ func GetCartItems(c *fiber.Ctx) error {
 	}
 	// get cart items by cart id
 	query, page, limit := utils.GetPaginatedQuery(&models.CartItem{}, c.Query("page", "1"), c.Query("limit", "10"))
-	query = query.Preload("Product")
-
-	var cartItems []models.CartItem
 	var totalData int64
 
 	query.Count(&totalData)
+
 	// query cartItems
-	if err := query.Find(&cartItems).Error; err != nil {
-		response := dto.NewErrorResponse("Error getting cartitems", err.Error())
+	var cartItems []models.CartItem
+	if err := getCartItemsListByCartId(&cartItems, &cart.ID, query); err != nil {
+		response := dto.NewErrorResponse("Error getting cart items", err.Error())
 		return c.Status(fiber.StatusNotFound).JSON(response)
 	}
 	var cartItemDtos []dto.ResponseCartItem
 	for _, cartItem := range cartItems {
-		productDTO := dto.NewResponseCartItem(&cartItem)
-		cartItemDtos = append(cartItemDtos, productDTO)
+		cartItemDTO := dto.NewResponseCartItem(&cartItem)
+		cartItemDtos = append(cartItemDtos, cartItemDTO)
 	}
 
 	// Return the list of transformed products
@@ -269,10 +268,11 @@ func GetCartItemById(c *fiber.Ctx) error {
 	// Return the user details
 	response := dto.NewSuccessResponse(dto.NewResponseCartItem(&cartItem), "cart item data retrieved successfully")
 	return c.Status(fiber.StatusOK).JSON(response)
-
 }
 
 // Updated the function to use the transaction
+
+// SERVICE FUNCTION
 func updateCartTotalTransaction(cart *models.Cart, tx *gorm.DB) error {
 	var total float64
 	if err := tx.Model(&models.CartItem{}).
@@ -285,18 +285,6 @@ func updateCartTotalTransaction(cart *models.Cart, tx *gorm.DB) error {
 
 	cart.TotalAmount = total
 	return tx.Save(cart).Error
-}
-
-// HELPER FUNCTION
-
-func updateCartTotal(cart *models.Cart) error {
-	var total float64
-	if err := database.Database.Db.Model(&models.CartItem{}).Where("cart_refer = ?", cart.ID).
-		Select("COALESCE(SUM(quantity * price), 0)").Joins("JOIN products ON cart_items.product_refer = products.id").Scan(&total).Error; err != nil {
-		return err
-	}
-	cart.TotalAmount = total
-	return database.Database.Db.Save(cart).Error
 }
 
 func findOrCreateCartByUserId(cart *models.Cart, userID *uuid.UUID) error {
@@ -314,5 +302,14 @@ func findOrCreateCartByUserId(cart *models.Cart, userID *uuid.UUID) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func getCartItemsListByCartId(cartItems *[]models.CartItem, cartID *uuid.UUID, query *gorm.DB) error {
+
+	if err := query.Where("cart_refer = ?", *cartID).Preload("Product").Find(&cartItems).Error; err != nil {
+		return err
+	}
+
 	return nil
 }

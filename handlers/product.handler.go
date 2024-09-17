@@ -4,6 +4,7 @@ import (
 	"github.com/arsyaputraa/go-synapsis-challenge/database"
 	"github.com/arsyaputraa/go-synapsis-challenge/dto"
 	"github.com/arsyaputraa/go-synapsis-challenge/models"
+	"github.com/arsyaputraa/go-synapsis-challenge/service"
 	"github.com/arsyaputraa/go-synapsis-challenge/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -30,25 +31,23 @@ func GetProductList(c *fiber.Ctx) error {
 	query, page, limit := utils.GetPaginatedQuery(&models.Product{}, c.Query("page", "1"), c.Query("limit", "10"))
 	query = query.Preload("Category")
 
-	var products []models.Product
 	var totalData int64
 
 	if categoryID != "" {
-
-		if _, err := uuid.Parse(categoryID); err != nil {
+		categoryUUID, err := utils.CheckUUID(categoryID)
+		if err != nil {
 			response := dto.NewErrorResponse("Invalid Category ID", err.Error())
 			return c.Status(fiber.StatusBadRequest).JSON(response)
 		}
-		query = query.Where("category_refer = ?", categoryID)
+		query = query.Where("category_refer = ?", categoryUUID)
 	}
 
 	query.Count(&totalData)
-
-	if err := query.Find(&products).Error; err != nil {
+	var products []models.Product
+	if err := service.GetProducts(&products, query); err != nil {
 		response := dto.NewErrorResponse("Error getting products", err.Error())
 		return c.Status(fiber.StatusNotFound).JSON(response)
 	}
-
 	var productDTOs []dto.ResponseProduct
 	for _, product := range products {
 		productDTO := dto.NewResponseProduct(&product)
@@ -80,14 +79,20 @@ func GetProductList(c *fiber.Ctx) error {
 // @Failure 401 {object} dto.GeneralResponse "Unauthorized"
 // @Router /product/{id} [get]
 func GetProduct(c *fiber.Ctx) error {
-	productID := c.Params("id")
+	productIDStr := c.Params("id")
+	productID, err := uuid.Parse(productIDStr)
+	if err != nil {
+		response := dto.NewErrorResponse("Invalid product ID format", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(response)
+	}
 
-	// Fetch the user from the database
 	var product models.Product
-	if err := database.Database.Db.Preload("Category").First(&product, "id = ?", productID).Error; err != nil {
+
+	if err := service.GetProductByID(&product, productID, database.Database.Db); err != nil {
 		response := dto.NewErrorResponse("Product not found", err.Error())
 		return c.Status(fiber.StatusNotFound).JSON(response)
 	}
+
 	// Return the user details
 	response := dto.NewSuccessResponse(dto.NewResponseProduct(&product), "User data retrieved successfully")
 	return c.JSON(response)
@@ -131,7 +136,7 @@ func AddProduct(c *fiber.Ctx) error {
 	newProduct := requestProduct.ToModel()
 
 	// Save the new product to the database
-	if err := database.Database.Db.Create(&newProduct).Error; err != nil {
+	if err := service.CreateProduct(&newProduct, database.Database.Db); err != nil {
 		response := dto.NewErrorResponse("Error creating product", err.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
@@ -157,6 +162,12 @@ func AddProduct(c *fiber.Ctx) error {
 // @Security BearerAuth
 func UpdateProduct(c *fiber.Ctx) error {
 	productID := c.Params("id")
+	db := database.Database.Db
+	productUUID, err := utils.CheckUUID(productID)
+	if err != nil {
+		response := dto.NewErrorResponse("Invalid Product ID", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(response)
+	}
 
 	var updateProduct dto.RequestUpdateProduct
 	if err := c.BodyParser(&updateProduct); err != nil {
@@ -171,7 +182,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 	}
 
 	var product models.Product
-	if err := database.Database.Db.First(&product, "id = ?", productID).Error; err != nil {
+	if err := service.GetProductByID(&product, *productUUID, db); err != nil {
 		response := dto.NewErrorResponse("Product not found", err.Error())
 		return c.Status(fiber.StatusNotFound).JSON(response)
 	}
@@ -181,7 +192,7 @@ func UpdateProduct(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
-	if err := database.Database.Db.Save(&product).Error; err != nil {
+	if err := service.UpdateProduct(&product, db); err != nil {
 		response := dto.NewErrorResponse("Error updating product", err.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
@@ -203,17 +214,23 @@ func UpdateProduct(c *fiber.Ctx) error {
 func DeleteProduct(c *fiber.Ctx) error {
 	// Get the product ID from the URL path
 	productID := c.Params("id")
+	db := database.Database.Db
+	productUUID, err := utils.CheckUUID(productID)
+	if err != nil {
+		response := dto.NewErrorResponse("Invalid Product ID", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(response)
+	}
 
 	// Fetch the product from the database
 	var product models.Product
-	if err := database.Database.Db.First(&product, "id = ?", productID).Error; err != nil {
+	if err := service.GetProductByID(&product, *productUUID, db); err != nil {
 		// If the product is not found, return a 404 response
 		response := dto.NewErrorResponse("Product not found", err.Error())
 		return c.Status(fiber.StatusNotFound).JSON(response)
 	}
 
 	// Delete the product
-	if err := database.Database.Db.Delete(&product).Error; err != nil {
+	if err := service.DeleteProduct(&product, db); err != nil {
 		response := dto.NewErrorResponse("Error deleting product", err.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
