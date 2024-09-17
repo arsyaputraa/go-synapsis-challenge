@@ -5,10 +5,10 @@ import (
 )
 
 // SetupRoutes func
-   func SetupRoutes(app *fiber.App) {
+func SetupRoutes(app *fiber.App) {
 	// user
 	userRoutes(app)
 	authRoutes(app)
 	productRoutes(app)
-   }
-
+	adminRoutes(app)
+}

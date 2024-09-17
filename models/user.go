@@ -3,26 +3,24 @@ package models
 import (
 	"time"
 
-	"github.com/arsyaputraa/go-synapsis-challenge/dto"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 const (
-	Admin     string = "admin"
+	Admin    string = "admin"
 	Customer string = "customer"
 )
 
-
 type User struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"id"`
-	Name      string     `gorm:"type:varchar(100);not null" json:"name"`
-	Email     string     `gorm:"type:varchar(100);uniqueIndex;not null" json:"email"`
-	Password  string     `gorm:"type:varchar(100);not null" json:"password"`
-	Role     string    `gorm:"default:customer" json:"role"`
-	CreatedAt   time.Time `gorm:"autoCreateTime"`
-    UpdatedAt   time.Time `gorm:"autoUpdateTime"`
+	Name      string    `gorm:"type:varchar(100);not null" json:"name"`
+	Email     string    `gorm:"type:varchar(100);uniqueIndex;not null" json:"email"`
+	Password  string    `gorm:"type:varchar(100);not null" json:"password"`
+	Role      string    `gorm:"default:customer" json:"role"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
 
 type SignUpInput struct {
@@ -37,17 +35,11 @@ type SignInInput struct {
 	Password string `json:"password"  validate:"required"`
 }
 
-
 func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
-    // Generate a new UUID and assign it to the ID field
-    user.ID = uuid.New()
-    return
+	// Generate a new UUID and assign it to the ID field
+	user.ID = uuid.New()
+	return
 }
-
-func (u *User) ToDto() dto.ResponseUser {
-	return dto.ResponseUser{ID: u.ID, Name: u.Name, Email: u.Email, CreatedAt: u.CreatedAt, UpdatedAt: u.UpdatedAt, Role: u.Role}
-}
-
 
 var validate = validator.New()
 
