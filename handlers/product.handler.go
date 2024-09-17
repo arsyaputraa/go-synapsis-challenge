@@ -57,11 +57,13 @@ func GetProductList(c *fiber.Ctx) error {
 
 	// Return the list of transformed products
 
-	paginatedResponse := dto.NewPaginatedResponse[dto.ResponseProduct]{
-		Total: int(totalData),
-		Page:  page,
-		Limit: limit,
-		List:  productDTOs,
+	paginatedResponse := dto.ResponsePaginated[dto.ResponseProduct]{
+		Meta: dto.PaginatedMeta{
+			Limit: limit,
+			Total: int(totalData),
+			Page:  page,
+		},
+		List: productDTOs,
 	}
 	response := dto.NewSuccessResponse(paginatedResponse, "Products Retrieved")
 	return c.Status(200).JSON(response)
