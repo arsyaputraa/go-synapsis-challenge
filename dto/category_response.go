@@ -6,9 +6,9 @@ import (
 )
 
 type ResponseCategory struct {
-	ID          uuid.UUID `json:"id,omitempty"` // Use UUID as the primary key
-	Name        string    `json:"name,omitempty"`
-	Description string    `json:"description,omitempty"`
+	ID          uuid.UUID `json:"id"` // Use UUID as the primary key
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
 }
 
 func NewResponseCategory(c *models.Category) ResponseCategory {

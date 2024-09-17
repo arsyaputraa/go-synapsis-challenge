@@ -8,12 +8,12 @@ import (
 )
 
 type ResponseUser struct {
-	ID        uuid.UUID `json:"id,omitempty"`
-	Name      string    `json:"name,omitempty"`
-	Email     string    `json:"email,omitempty"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Role      string    `json:"role,omitempty"`
+	Role      string    `json:"role"`
 }
 
 func NewResponseUser(u *models.User) ResponseUser {

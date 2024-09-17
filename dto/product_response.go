@@ -8,14 +8,14 @@ import (
 )
 
 type ResponseProduct struct {
-	ID          uuid.UUID        `json:"id,omitempty"` // Use UUID as the primary key
-	Name        string           `json:"name,omitempty"`
-	Description string           `json:"description,omitempty"`
-	Price       float64          `json:"price,omitempty"`
-	Stock       int              `json:"stock,omitempty"`
-	CreatedAt   time.Time        `json:"created_at,omitempty"`
-	UpdatedAt   time.Time        `json:"updated_at,omitempty"`
-	Category    ResponseCategory `json:"category,omitempty"`
+	ID          uuid.UUID        `json:"id"` // Use UUID as the primary key
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Price       float64          `json:"price"`
+	Stock       int              `json:"stock"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+	Category    ResponseCategory `json:"category"`
 }
 
 func NewResponseProduct(p *models.Product) ResponseProduct {
