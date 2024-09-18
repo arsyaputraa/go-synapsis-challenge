@@ -13,4 +13,7 @@ func adminRoutes(app *fiber.App) {
 	admin.Post("/product", handlers.AddProduct)
 	admin.Patch("/product/:id", handlers.UpdateProduct)
 	admin.Delete("/product/:id", handlers.DeleteProduct)
+	admin.Post("/category", handlers.AddCategory)
+	admin.Patch("/category/:id", handlers.UpdateCategory)
+	admin.Delete("/category/:id", handlers.DeleteCategory)
 }

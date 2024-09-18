@@ -9,4 +9,5 @@ func categoryRoutes(app *fiber.App) {
 	api := app.Group("/api")
 	category := api.Group("/category")
 	category.Get("/", handlers.GetCategories)
+
 }
