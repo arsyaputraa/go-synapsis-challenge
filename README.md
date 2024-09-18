@@ -58,9 +58,9 @@ A Simple Online Store REST API build with Golang Fiber, GORM, and Postgres
 - `DB_PASSWORD`:The password for the database user.
 - `DB_NAME`:The database name
 
-  ## ERD
+## ERD
 
-  ![ERD](online-store-erd.png)
+![ERD](online-store-erd.png)
 
 ## API Endpoint Documentation
 
@@ -84,10 +84,6 @@ Endpoints for managing products and categories. Only accessible by users with an
 #### 1. `POST /api/admin/product`
 
 - **Description**: Adds a new product to the database.
-
-  ```
-
-  ```
 
 #### 2. `PATCH /api/admin/product/:id`
 
