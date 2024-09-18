@@ -5,7 +5,7 @@ import (
 
 	"github.com/arsyaputraa/go-synapsis-challenge/database"
 	_ "github.com/arsyaputraa/go-synapsis-challenge/docs"
-	"github.com/arsyaputraa/go-synapsis-challenge/router"
+	"github.com/arsyaputraa/go-synapsis-challenge/internal/delivery/http/router"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -33,18 +33,14 @@ import (
 // @description "Bearer <token>"
 func init() {
 
-	database.Connect();
+	database.Connect()
 }
-
 
 func main() {
 	app := fiber.New()
-
 	app.Use(logger.New())
 	app.Use(cors.New())
 	app.Get("/swagger/*", swagger.HandlerDefault)
-
 	router.SetupRoutes(app)
-
 	log.Fatal(app.Listen(":8080"))
 }
