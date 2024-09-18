@@ -15,7 +15,7 @@ type Product struct {
 	Stock         int       `gorm:"not null" json:"stock"`
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
-	CategoryRefer uuid.UUID `json:"category_id" gorm:"type:uuid;"`
+	CategoryRefer uuid.UUID `json:"category_id" gorm:"type:uuid;index"`
 	Category      Category  `gorm:"foreignKey:CategoryRefer"`
 }
 

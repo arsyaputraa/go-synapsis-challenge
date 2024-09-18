@@ -11,9 +11,9 @@ type CartItem struct {
 	ID           uuid.UUID `gorm:"type:uuid;primaryKey"` // Use UUID as the primary key
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
-	CartRefer    uuid.UUID `json:"cart_id" gorm:"type:uuid;"`
+	CartRefer    uuid.UUID `json:"cart_id" gorm:"type:uuid;index"`
 	Cart         Cart      `gorm:"foreignKey:CartRefer"`
-	ProductRefer uuid.UUID `json:"product_id" gorm:"type:uuid;"`
+	ProductRefer uuid.UUID `json:"product_id" gorm:"type:uuid;index"`
 	Product      Product   `gorm:"foreignKey:ProductRefer"`
 	Quantity     int       `gorm:"not null" json:"quantity"`
 }
