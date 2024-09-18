@@ -5,6 +5,7 @@ import (
 	"github.com/arsyaputraa/go-synapsis-challenge/internal/delivery/http/dto"
 	"github.com/arsyaputraa/go-synapsis-challenge/internal/models"
 	"github.com/arsyaputraa/go-synapsis-challenge/internal/service"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -43,7 +44,7 @@ func CheckoutOrder(c *fiber.Ctx) error {
 
 	// query cartItems
 	var cartItems []models.CartItem
-	if err := getCartItemsListByCartId(&cartItems, &cart.ID, tx); err != nil {
+	if err := service.GetCartItemsListByCartId(&cartItems, &cart.ID, tx); err != nil {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Error getting cart items", err.Error())
 		return c.Status(fiber.StatusNotFound).JSON(response)
@@ -53,6 +54,13 @@ func CheckoutOrder(c *fiber.Ctx) error {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Cart is empty", "Cannot checkout an empty cart.")
 		return c.Status(fiber.StatusBadRequest).JSON(response)
+	}
+
+	// update cart total
+	if err := service.UpdateCartTotalTransaction(&cart, tx); err != nil {
+		tx.Rollback()
+		response := dto.NewErrorResponse("Error updating cart total", err.Error())
+		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
 	// Create a new order
@@ -73,20 +81,29 @@ func CheckoutOrder(c *fiber.Ctx) error {
 		}
 	}
 
+	validate := validator.New()
 	// Create payment record
 	var paymentRequest dto.RequestCreatePayment
+	var otp string
+	var payment models.Payment
 	if err := c.BodyParser(&paymentRequest); err != nil {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Invalid payment request", err.Error())
 		return c.Status(fiber.StatusBadRequest).JSON(response)
 	}
-	if err := service.CreatePayment(&order, &paymentRequest, tx); err != nil {
+
+	if err := validate.Struct(&paymentRequest); err != nil {
+		tx.Rollback()
+		response := dto.NewErrorResponse("Validation error", err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(response)
+	}
+
+	if err := service.CreatePayment(&order, &payment, &paymentRequest, &otp, tx); err != nil {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Error creating payment", err.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
-	// Clear the cart
 	if err := service.ClearCart(cart.ID, tx); err != nil {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Error clearing cart", err.Error())
@@ -101,8 +118,31 @@ func CheckoutOrder(c *fiber.Ctx) error {
 	}
 
 	// Return a success response
-	response := dto.NewSuccessResponse(nil, "Order created successfully")
+	response := dto.NewSuccessResponse(dto.ResponseCheckoutOrder{ID: order.ID, Otp: otp, TotalAmount: order.TotalAmount, PaymentID: payment.ID}, "Order created successfully")
 	return c.Status(fiber.StatusOK).JSON(response)
 }
 
-// SERVICE FUNCTION
+// GetUserOrders godoc
+// @Summary Get current user's orders
+// @Description Get the list of orders for the authenticated user
+// @Tags order
+// @Produce json
+// @Success 200 {array} dto.ResponseOrder "List of user orders"
+// @Failure 404 {object} dto.GeneralResponse "User not found"
+// @Failure 401 {object} dto.GeneralResponse "Unauthorized"
+// @Router /order [get]
+// @Security BearerAuth
+func GetUserOrders(c *fiber.Ctx) error {
+	// Get user ID from the request context
+	userID := c.Locals("userID").(uuid.UUID)
+	// Fetch orders using the service layer
+	orders, err := service.GetUserOrders(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.NewErrorResponse("Error retrieving orders", err.Error()))
+	}
+	var orderResponses []dto.ResponseOrder
+	for _, order := range orders {
+		orderResponses = append(orderResponses, dto.NewResponseOrder(&order))
+	}
+	return c.JSON(dto.NewSuccessResponse(orderResponses, "Orders retrieved successfully"))
+}

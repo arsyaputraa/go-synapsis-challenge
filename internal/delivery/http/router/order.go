@@ -13,5 +13,5 @@ func orderRoutes(app *fiber.App) {
 	order := api.Group("/order", middleware.JWTMiddleware)
 
 	order.Post("/checkout", handlers.CheckoutOrder)
-
+	order.Get("/", handlers.GetUserOrders)
 }

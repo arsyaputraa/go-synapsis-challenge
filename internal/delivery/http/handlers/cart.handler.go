@@ -4,6 +4,7 @@ import (
 	"github.com/arsyaputraa/go-synapsis-challenge/database"
 	"github.com/arsyaputraa/go-synapsis-challenge/internal/delivery/http/dto"
 	"github.com/arsyaputraa/go-synapsis-challenge/internal/models"
+	"github.com/arsyaputraa/go-synapsis-challenge/internal/service"
 	"github.com/arsyaputraa/go-synapsis-challenge/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -63,7 +64,7 @@ func AddToCart(c *fiber.Ctx) error {
 	}
 
 	var cart models.Cart
-	if err := findOrCreateCartByUserId(&cart, &userID); err != nil {
+	if err := service.FindOrCreateCartByUserId(&cart, &userID); err != nil {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Error When Finding Cart", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
@@ -97,7 +98,7 @@ func AddToCart(c *fiber.Ctx) error {
 	}
 
 	// Update the total cart amount
-	if err := updateCartTotalTransaction(&cart, tx); err != nil {
+	if err := service.UpdateCartTotalTransaction(&cart, tx); err != nil {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Error updating cart total", err.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
@@ -131,7 +132,7 @@ func GetCartItems(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 	// get cart by user id
 	var cart models.Cart
-	if err := findOrCreateCartByUserId(&cart, &userID); err != nil {
+	if err := service.FindOrCreateCartByUserId(&cart, &userID); err != nil {
 		response := dto.NewErrorResponse("Error When Finding Cart", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
@@ -143,7 +144,7 @@ func GetCartItems(c *fiber.Ctx) error {
 
 	// query cartItems
 	var cartItems []models.CartItem
-	if err := getCartItemsListByCartId(&cartItems, &cart.ID, query); err != nil {
+	if err := service.GetCartItemsListByCartId(&cartItems, &cart.ID, query); err != nil {
 		response := dto.NewErrorResponse("Error getting cart items", err.Error())
 		return c.Status(fiber.StatusNotFound).JSON(response)
 	}
@@ -226,7 +227,7 @@ func RemoveCartItems(c *fiber.Ctx) error {
 	}
 
 	// Update the total cart amount
-	if err := updateCartTotalTransaction(&cart, tx); err != nil {
+	if err := service.UpdateCartTotalTransaction(&cart, tx); err != nil {
 		tx.Rollback()
 		response := dto.NewErrorResponse("Error updating cart total", err.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
@@ -271,45 +272,3 @@ func GetCartItemById(c *fiber.Ctx) error {
 }
 
 // Updated the function to use the transaction
-
-// SERVICE FUNCTION
-func updateCartTotalTransaction(cart *models.Cart, tx *gorm.DB) error {
-	var total float64
-	if err := tx.Model(&models.CartItem{}).
-		Where("cart_refer = ?", cart.ID).
-		Select("COALESCE(SUM(quantity * price), 0)"). // Use COALESCE to handle NULL
-		Joins("JOIN products ON cart_items.product_refer = products.id").
-		Scan(&total).Error; err != nil {
-		return err
-	}
-
-	cart.TotalAmount = total
-	return tx.Save(cart).Error
-}
-
-func findOrCreateCartByUserId(cart *models.Cart, userID *uuid.UUID) error {
-
-	if err := database.Database.Db.Where("user_refer = ?", userID).First(&cart).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			newCart := models.Cart{
-				UserRefer: *userID,
-			}
-			if err := database.Database.Db.Create(&newCart).Error; err != nil {
-				return err
-			}
-			*cart = newCart
-		} else {
-			return err
-		}
-	}
-	return nil
-}
-
-func getCartItemsListByCartId(cartItems *[]models.CartItem, cartID *uuid.UUID, query *gorm.DB) error {
-
-	if err := query.Where("cart_refer = ?", *cartID).Preload("Product").Find(&cartItems).Error; err != nil {
-		return err
-	}
-
-	return nil
-}

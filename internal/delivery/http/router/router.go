@@ -20,4 +20,6 @@ func SetupRoutes(app *fiber.App) {
 	orderRoutes(app)
 	// category
 	categoryRoutes(app)
+	// webhook
+	webhookRoutes(app)
 }

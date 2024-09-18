@@ -31,6 +31,7 @@ type Payment struct {
 	Status     string    `gorm:"default:unpaid" json:"status"`
 	Amount     float64   `gorm:"type:decimal(10,2);not null" json:"amount"`
 	Method     string    `gorm:"not null" json:"method"`
+	Otp        string    `gorm:"not null" json:"otp"`
 }
 
 func (payment *Payment) BeforeCreate(tx *gorm.DB) (err error) {
