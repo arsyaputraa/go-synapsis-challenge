@@ -57,6 +57,9 @@ A Simple Online Store REST API build with Golang Fiber, GORM, and Postgres
 - `DB_USER`:The database user.
 - `DB_PASSWORD`:The password for the database user.
 - `DB_NAME`:The database name
+- `ADMIN_EMAIL`: Your desired app admin email
+  - (will create new account if not exist)
+- `ADMIN_PASSWORD`:Your desired app admin password
 
 ## ERD
 

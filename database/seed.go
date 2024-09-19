@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/arsyaputraa/go-synapsis-challenge/internal/models"
+	"github.com/arsyaputraa/go-synapsis-challenge/pkg/config"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -14,10 +15,10 @@ type SeedData struct {
 
 func InitializeAdminUser() {
 	var admin models.User
-	result := Database.Db.Where("email = ?", "admin@mystore.com").First(&admin)
+	result := Database.Db.Where("email = ?", config.Config("ADMIN_EMAIL")).First(&admin)
 
 	if result.Error != nil && result.Error.Error() == "record not found" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("mystore_admin"), 14)
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(config.Config("ADMIN_PASSWORD")), 14)
 		if err != nil {
 			log.Fatalf("Failed to hash password: %v", err)
 		}
@@ -25,7 +26,7 @@ func InitializeAdminUser() {
 		admin := models.User{
 
 			Name:     "Admin",
-			Email:    "admin@mystore.com",
+			Email:    config.Config("ADMIN_EMAIL"),
 			Password: string(hashedPassword),
 			Role:     models.Admin,
 		}
